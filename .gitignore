@@ -1,3 +1,5 @@
 *.env*
 *.org
 .devenv/
+build/
+.cache/

@@ -1,12 +1,11 @@
 #ifndef LIB_H_
 #define LIB_H_
 
-#include <iostream>
 #include <map>
 #include <memory>
 #include <variant>
+#include <vector>
 
-// Structures for defining a Formula
 struct False;
 struct True;
 struct Atom;
@@ -37,7 +36,17 @@ template <typename T> bool is(const FormulaPtr &f) {
 
 template <typename T> T as(const FormulaPtr &f) { return std::get<T>(*f); }
 
-// Valuation
 using Valuation = std::map<std::string, bool>;
+
+struct Literal {
+    bool pos;
+    std::string name;
+};
+
+using Clause = std::vector<Literal>;
+using NormalForm = std::vector<Clause>;
+
+std::string tseytinRec(const FormulaPtr &f, int &subCount, NormalForm &cnf);
+NormalForm tseytin(const FormulaPtr &f);
 
 #endif // LIB_H_
