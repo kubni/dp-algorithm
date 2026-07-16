@@ -1,5 +1,6 @@
-*.env*
 *.org
 .devenv/
 build/
 .cache/
+*.env
+*.html
