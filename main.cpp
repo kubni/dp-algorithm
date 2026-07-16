@@ -1,3 +1,4 @@
+#include "dp.h"
 #include "lib.h"
 #include <iostream>
 
@@ -14,18 +15,17 @@ void printCNF(const NormalForm &cnf) {
 int main() {
     FormulaPtr p = ptr(Atom{"p"});
     FormulaPtr q = ptr(Atom{"q"});
+    FormulaPtr r = ptr(Atom{"r"});
     FormulaPtr pAndq = ptr(Binary{Binary::And, p, q});
-    FormulaPtr f = ptr(Not{pAndq});
+    FormulaPtr f = ptr(Binary{Binary::Or, ptr(Not{pAndq}), r});
 
     NormalForm cnf = tseytin(f);
-    std::cout << "Formula: !(p & q)\n";
-    std::cout << "Tseytin CNF: ";
-    printCNF(cnf);
-
-    FormulaPtr eq = ptr(Binary{Binary::Eq, p, q});
-    std::cout << "\nFormula: (p <-> q)\n";
-    std::cout << "Tseytin CNF: ";
-    printCNF(tseytin(eq));
+    auto res = perform_unit_propagation(cnf);
+    if (std::holds_alternative<NormalForm>(res))
+        // printCNF(as<NormalForm>(res));
+        printCNF(std::get<NormalForm>(res));
+    else
+        std::cout << "Res is boolean: " << std::endl;
 
     return 0;
 }

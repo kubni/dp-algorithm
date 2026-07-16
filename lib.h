@@ -41,6 +41,10 @@ using Valuation = std::map<std::string, bool>;
 struct Literal {
     bool pos;
     std::string name;
+
+    bool operator==(const Literal &other) const {
+        return pos == other.pos && name == other.name;
+    }
 };
 
 using Clause = std::vector<Literal>;
