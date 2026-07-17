@@ -72,10 +72,13 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
              * Additionally, if that clause is not empty, we instantly return
              * UNSAT.
              */
+            Literal negative_l = Literal{!l.pos, l.name};
             for (Clause &clause : cnf) {
-                std::erase_if(
-                    clause, [&l](const auto &literal) { return literal == l; });
-                if (clause.size() == 0)
+                std::erase_if(clause, [&negative_l](const auto &literal) {
+                    return literal == negative_l;
+                });
+
+                if (clause.empty())
                     return false; // NOTE: UNSAT
             }
         }
