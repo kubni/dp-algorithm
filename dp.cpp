@@ -38,9 +38,10 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
 
         std::vector<Literal> unit_clause_literals;
         for (int i : unit_clause_indices) {
-            // Get the literal from that unit clause, set its polarity to true
+            // Get the literal from that unit clause, behave as if its satisfied
             Literal unit_literal = cnf[i][0];
-            unit_literal.pos = true;
+            // unit_literal.pos = true; // NOTE: Wrong, the whole literal
+            // should be true, the current approach breaks negative literals
 
             // And remember it
             unit_clause_literals.push_back(unit_literal);
