@@ -12,7 +12,6 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
             return true;
 
         // NOTE: We need to go one-by-one with unit clause search.
-
         auto uit = std::ranges::find_if(
             cnf, [](const Clause &c) { return c.size() == 1; });
 
@@ -44,7 +43,7 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
          * UNSAT.
          */
         for (Clause &clause : cnf) {
-            std::erase_if(clause, [&negative_l](const auto &literal) {
+            std::erase_if(clause, [&negative_l](const Literal &literal) {
                 return literal == negative_l;
             });
 

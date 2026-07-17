@@ -25,7 +25,8 @@ int main() {
         // printCNF(as<NormalForm>(res));
         printCNF(std::get<NormalForm>(res));
     else
-        std::cout << "Res is boolean: " << std::endl;
+        std::cout << "Res is boolean: "
+                  << (std::get<bool>(res) ? "SAT" : "UNSAT") << std::endl;
 
     return 0;
 }
