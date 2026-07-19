@@ -216,6 +216,8 @@ bool dp(NormalForm &cnf) {
 
             // Pure literal step
             cnf = pure_literal(cnf);
+            if (cnf.empty())
+                return true; // SAT, because of empty clause set
 
             // Elimination step
 
