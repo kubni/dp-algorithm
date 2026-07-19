@@ -212,7 +212,7 @@ bool dp(NormalForm &cnf) {
         // Unit propagation step
         auto res = perform_unit_propagation(cnf);
         if (std::holds_alternative<NormalForm>(res)) {
-            NormalForm cnf = std::get<NormalForm>(res);
+            cnf = std::get<NormalForm>(res);
 
             // Pure literal step
             cnf = pure_literal(cnf);
