@@ -21,9 +21,14 @@ int main() {
 
     NormalForm cnf = tseytin(f);
     auto res = perform_unit_propagation(cnf);
-    if (std::holds_alternative<NormalForm>(res))
-        // printCNF(as<NormalForm>(res));
+    if (std::holds_alternative<NormalForm>(res)) {
+        NormalForm cnf = std::get<NormalForm>(res);
+        // Pure literal step
+        res = pure_literal(cnf);
+
         printCNF(std::get<NormalForm>(res));
+    }
+
     else
         std::cout << "Res is boolean: "
                   << (std::get<bool>(res) ? "SAT" : "UNSAT") << std::endl;
