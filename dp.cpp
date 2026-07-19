@@ -1,13 +1,11 @@
 #include "dp.h"
 #include <algorithm>
-#include <iostream>
-#include <ranges>
 #include <set>
 
 Literal negate_literal(const Literal &l) { return Literal{!l.pos, l.name}; }
 
-// Returns true if SAT, false if UNSAT, NormalForm formula otherwise (we
-// continue with the next step)
+/* Returns true if SAT, false if UNSAT, NormalForm formula otherwise (we
+   continue with the next step) */
 std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
 
     // We repeat everything while there are unit clauses in our formula:
@@ -44,7 +42,7 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
         /*
          * If our literal is found with the opposite polarity in a clause,
          * we remove that opposite polarity literal from that clause.
-         * Additionally, if that clause is not empty, we instantly return
+         * Additionally, if that clause is empty, we instantly return
          * UNSAT.
          */
         for (Clause &clause : cnf) {
@@ -127,7 +125,7 @@ template <typename T> void deduplicate(std::vector<T> &v) {
 
 std::variant<NormalForm, bool> elimination(NormalForm &cnf,
                                            const Literal &pivot) {
-    std::set<Clause> P, N, R; // TODO: Clause vs const Clause& vs const Clause
+    std::set<Clause> P, N, R;
     for (auto i = 0; i < cnf.size(); i++) {
         const Clause &clause = cnf[i];
         if (std::ranges::contains(clause, pivot))
@@ -140,7 +138,6 @@ std::variant<NormalForm, bool> elimination(NormalForm &cnf,
 
     // 3) Generate all resolvents on pivot
     NormalForm S_prim(R.begin(), R.end());
-    // TODO: Time complexity is too high?
     for (const Clause &p_clause : P) {
         Clause pc_without_pivot = p_clause;
         std::erase(pc_without_pivot, pivot);
@@ -166,9 +163,6 @@ std::variant<NormalForm, bool> elimination(NormalForm &cnf,
               Deduplicate the resolvent, since we could have resolvent be
               p || p
              */
-            // std::sort(resolvent.begin(), resolvent.end());
-            // auto dup = std::ranges::unique(resolvent);
-            // resolvent.erase(dup.begin(), dup.end());
             deduplicate(resolvent);
 
             // 5) Add the resolvent to the S'
@@ -199,10 +193,14 @@ bool dp(NormalForm &cnf) {
                 return true; // SAT, because of empty clause set
 
             // Elimination step
-
-            // Pick the first literal in the first clause as the pivot
-            // TODO: is this strong enough? We remove the pivot later from every
-            // clause so each time this will be a new variable.
+            /* Pick the first literal in the first clause as the pivot.
+             * This, hopefully, doesn't break correctness of the algorithm,
+             * since every iteration we are guaranteed to pick another variable.
+             *
+             * TODO: A smarter way to pick the pivot? For example, maybe we
+             * could measure the impact the pivot choice has on the number of
+             * newly added clauses.
+             */
             const Literal pivot = cnf[0][0];
             res = elimination(cnf, pivot);
             if (std::holds_alternative<NormalForm>(res))
