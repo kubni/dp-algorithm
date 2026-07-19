@@ -59,4 +59,5 @@ using NormalForm = std::vector<Clause>;
 std::string tseytinRec(const FormulaPtr &f, int &subCount, NormalForm &cnf);
 NormalForm tseytin(const FormulaPtr &f);
 
+void print_cnf(const NormalForm &cnf);
 #endif // LIB_H_

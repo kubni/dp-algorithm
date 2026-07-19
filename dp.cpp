@@ -4,6 +4,8 @@
 #include <ranges>
 #include <set>
 
+Literal negate_literal(const Literal &l) { return Literal{!l.pos, l.name}; }
+
 // Returns true if SAT, false if UNSAT, NormalForm formula otherwise (we
 // continue with the next step)
 std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
@@ -25,7 +27,7 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
 
         // Extract the literal from the matched unit clause
         const Literal l = (*uit)[0];
-        const Literal negative_l = Literal{!l.pos, l.name};
+        const Literal negative_l = negate_literal(l);
 
         /*
          If our literal is found with a same polarity in a clause, we remove
@@ -102,81 +104,38 @@ NormalForm pure_literal(NormalForm &cnf) {
     }
 }
 
-std::variant<NormalForm, bool> process_resolvent(NormalForm &resolvent) {
-    // Drop tautologies (clauses that have both x and !x)
-    // for (const Clause &c : resolvent) {
-    // TODO: Invalidation?
-    std::erase_if(resolvent, [](const Clause &c) {
-        for (const Literal &l : c) {
-            auto it = std::ranges::find_if(c, [&l](const Literal &l2) {
-                return l2.name == l.name && l2.pos == !l.pos;
-            });
+bool does_contain_tautology(Clause &resolvent) {
+    for (const Literal &l : resolvent) {
+        auto it = std::ranges::find_if(resolvent, [&l](const Literal &l2) {
+            return l2.name == l.name && l2.pos == !l.pos;
+        });
 
-            /*
-              If iterator isn't at end(), it means we have a match,
-              which means the clause should be deleted, so we return true
-            */
-            if (it != c.end()) {
-                return true;
-            }
+        /* If the find_if iterator isn't at the end, it means we have a match,
+         * and therefore a tautology */
+        if (it != resolvent.end()) {
+            return true;
         }
-        return false;
-    });
+    }
+    return false;
+}
 
-    // Deduplicate resolvent
-    // unique() works on consecutive duplicated elements, so we need to sort
-    // Sort literals in the each clause:
-    for (Clause &c : resolvent)
-        std::sort(c.begin(), c.end());
-    std::sort(resolvent.begin(), resolvent.end());
-    auto dup = std::ranges::unique(resolvent);
-    resolvent.erase(dup.begin(), dup.end());
-
-    // Check if the resolvent is an empty set now, and return UNSAT if so
-    if (resolvent.empty())
-        return false; // NOTE: "UNSAT";
-
-    return resolvent;
+template <typename T> void deduplicate(std::vector<T> &v) {
+    std::sort(v.begin(), v.end());
+    auto dup = std::ranges::unique(v);
+    v.erase(dup.begin(), dup.end());
 }
 
 std::variant<NormalForm, bool> elimination(NormalForm &cnf,
                                            const Literal &pivot) {
-    // Note all of the variable names
-    // TODO: Unneeded?
-    std::set<std::string> variable_names;
-    for (const Clause &c : cnf) {
-        for (const Literal &l : c) {
-            variable_names.insert(l.name);
-        }
-    }
-
-    // Use while(true) and search for them with find_first_of
-    // or just find_if ?
-
-    // Pick the first literal in the first clause as the pivot
-    // TODO: is this strong enough? We remove the pivot later from every
-    // clause so each time this will be a new variable.
-    // const Literal pivot = cnf[0][0]; FIXME
     std::set<Clause> P, N, R; // TODO: Clause vs const Clause& vs const Clause
     for (auto i = 0; i < cnf.size(); i++) {
         const Clause &clause = cnf[i];
-        if (std::ranges::contains(clause, pivot)) {
-            pivot.pos ? P.insert(clause) : N.insert(clause);
-        } else
+        if (std::ranges::contains(clause, pivot))
+            P.insert(clause);
+        else if (std::ranges::contains(clause, negate_literal(pivot)))
+            N.insert(clause);
+        else
             R.insert(clause);
-
-        // // Drop tautologies
-        // TODO: Here or in process_resolvents
-        // if (P.contains(clause) && N.contains(clause)) {
-        //     P.erase(clause);
-        //     N.erase(clause);
-
-        //     // Erase it from the cnf too
-        //     // TODO: IS it safe to do here since we iterate over cnf?
-        //     //  If it isn't, we could remember its index and do it outside of
-        //     //  the loop
-        //     std::erase(cnf, clause);
-        // }
     }
 
     // 3) Generate all resolvents on pivot
@@ -187,22 +146,42 @@ std::variant<NormalForm, bool> elimination(NormalForm &cnf,
         std::erase(pc_without_pivot, pivot);
         for (const Clause &n_clause : N) {
             Clause nc_without_pivot = n_clause;
-            std::erase(nc_without_pivot, pivot);
+            std::erase(nc_without_pivot, negate_literal(pivot));
 
-            NormalForm resolvent = {pc_without_pivot, nc_without_pivot};
+            // NormalForm resolvent = {pc_without_pivot, nc_without_pivot};
+            // NOTE: resolvent is a Clause, not NormalForm
+            Clause resolvent = pc_without_pivot;
+            resolvent.append_range(nc_without_pivot);
 
-            // 4) Process the resolvents
-            auto res = process_resolvent(resolvent);
-            if (std::holds_alternative<bool>(res))
-                return false; // UNSAT
-            else {
-                resolvent = std::get<NormalForm>(res);
+            // 4) Process the resolvent
+            /* Check whether the clause is a tautology. If it is, don't add it
+               to S' */
+            if (does_contain_tautology(resolvent))
+                continue;
 
-                // 5) Add the resolvent to the S'
-                S_prim.append_range(resolvent);
-            }
+            // If the resolvent is an empty clause, return UNSAT
+            if (resolvent.empty())
+                return false;
+            /*
+              Deduplicate the resolvent, since we could have resolvent be
+              p || p
+             */
+            // std::sort(resolvent.begin(), resolvent.end());
+            // auto dup = std::ranges::unique(resolvent);
+            // resolvent.erase(dup.begin(), dup.end());
+            deduplicate(resolvent);
+
+            // 5) Add the resolvent to the S'
+            S_prim.push_back(resolvent);
         }
     }
+
+    // deduplicate S_prim
+    deduplicate(S_prim);
+
+    // Check if S_prim is empty set of clauses. If it is, return SAT
+    if (S_prim.empty())
+        return true;
 
     return S_prim;
 }

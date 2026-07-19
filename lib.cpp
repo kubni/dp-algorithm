@@ -1,4 +1,5 @@
 #include "lib.h"
+#include <iostream>
 #include <utility>
 FormulaPtr ptr(const Formula &f) { return std::make_shared<Formula>(f); }
 
@@ -82,4 +83,14 @@ NormalForm tseytin(const FormulaPtr &f) {
     std::string sub = tseytinRec(f, subCount, cnf);
     cnf.push_back({Literal{true, sub}});
     return cnf;
+}
+
+void print_cnf(const NormalForm &cnf) {
+    for (const auto &clause : cnf) {
+        std::cout << "[ ";
+        for (const auto &lit : clause)
+            std::cout << (lit.pos ? "" : "!") << lit.name << " ";
+        std::cout << "]";
+    }
+    std::cout << std::endl;
 }
