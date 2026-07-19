@@ -5,4 +5,6 @@
 
 std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf);
 
+NormalForm pure_literal(NormalForm &cnf);
+
 #endif // DP_H_

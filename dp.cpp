@@ -52,3 +52,46 @@ std::variant<NormalForm, bool> perform_unit_propagation(NormalForm &cnf) {
         }
     }
 }
+
+// TODO: A while(true) loop, because new pure literals can be found after
+// removals occur
+NormalForm pure_literal(NormalForm &cnf) {
+
+    // TODO: A better way to do this
+    std::map<std::string, int> literal_appearance_count;
+    for (const Clause &clause : cnf) {
+        for (const Literal &literal : clause) {
+            // We want to keep literals with same name, but different polarity,
+            // separate from each other for the count.
+            literal.pos ? literal_appearance_count[literal.name]++
+                        : literal_appearance_count["!" + literal.name]++;
+        }
+    }
+
+    // Find the literal whose opposite polarity doesn't exist in any other
+    // clause
+    auto res_it = std::ranges::find_if(
+        literal_appearance_count,
+        [&literal_appearance_count](std::pair<std::string, int> p) {
+            return p.first.starts_with("!")
+                       ? !literal_appearance_count.contains(p.first.substr(1))
+
+                       : !literal_appearance_count.contains("!" + p.first) 0;
+        });
+
+    // Handle the case where there isn't a single pure literal found
+    if (res_it == literal_appearance_count.end())
+        return cnf;
+
+    // Reconstruct the pure literal (since lit is a kv pair from the map)
+    bool is_literal_negative = res_it->first.contains("!");
+
+    const Literal pure_lit =
+        Literal{!is_literal_negative,
+                is_literal_negative ? res_it->first.substr(1) : res_it->first};
+
+    // We need to remove every clause that contains the found pure literal
+    std::erase_if(cnf, [&pure_lit](const Clause &clause) {
+        return std::ranges::contains(clause, pure_lit);
+    });
+}
