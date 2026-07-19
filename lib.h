@@ -45,6 +45,12 @@ struct Literal {
     bool operator==(const Literal &other) const {
         return pos == other.pos && name == other.name;
     }
+
+    bool operator<(const Literal &other) const {
+        if (name != other.name)
+            return name < other.name;
+        return pos < other.pos;
+    }
 };
 
 using Clause = std::vector<Literal>;
