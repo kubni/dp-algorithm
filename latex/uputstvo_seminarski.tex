@@ -49,15 +49,28 @@ Ostatak ovog rada organizovan je na sledeći način. U poglavlju \ref{sec:osnove
 \paragraph{Zadovoljivost.} Za formulu $F$ kažemo da je \emph{zadovoljiva} ako postoji valuacija $v$ takva da je $v(F) = \top$; u suprotnom je \emph{nezadovoljiva}.
 \paragraph{Tautologija.}Formula je \emph{tautologija} ako je tačna pri svakoj valuaciji. \emph{SAT problem} jeste problem odlučivanja da li je data formula zadovoljiva.
 
-\subsection{Konjunktivna normalna forma.} \paragraph{Literal.} Promenljiva ($p$) ili njena negacija ($\neg p$).
+ \paragraph{Literal.} Promenljiva ($p$) ili njena negacija ($\neg p$).
 \paragraph{Klauza.} Disjunkcija literala, npr.\ $(p \vee \neg q \vee r)$.
-\paragraph{Definicija KNF.} Formula je u \emph{konjunktivnoj normalnoj formi} (KNF) ako je konjunkcija klauza. 
+\paragraph{Konjunktivna normalna forma.} Formula je u \emph{konjunktivnoj normalnoj formi} (KNF) ako je konjunkcija klauza. DP procedura radi isključivo nad formulama u KNF.
+
+\paragraph{Dve prazne strukture.} Uvodimo dve granične vrednosti koje čine izlazne uslove algoritma:
+\begin{itemize}
+  \item \textbf{Prazna klauza} $\{\}$ predstavlja $\bot$: disjunkcija bez članova je netačna. Pojava prazne klauze znači da je formula \textbf{nezadovoljiva}.
+  \item \textbf{Prazan skup klauza} $\{\}$ predstavlja $\top$: konjunkcija bez članova je tačna. Prazan skup klauza znači da je formula \textbf{zadovoljiva}.
+\end{itemize}
+
+\paragraph{Rezolucija.} Ako klauza $C_1$ sadrži literal $x$, a klauza $C_2$ literal $\neg x$, njihova \emph{rezolventa} po \emph{pivotu} $x$ je klauza
+\[
+  R = (C_1 \setminus \{x\}) \cup (C_2 \setminus \{\neg x\}).
+\]
+Rezolventa je logička posledica konjunkcije $C_1 \wedge C_2$. Rezolucija je pravilo izvođenja na kome počiva glavni korak DP procedure.
+
+\paragraph{Tseytin transformacija.} Proizvoljna formula ne mora biti u KNF, a naivno prevođenje može eksponencijalno povećati broj klauza. \emph{Tseytin transformacija} zaobilazi taj problem tako što svakoj podformuli dodeljuje novu promenljivu i dodaje klauze koje iskazuju ekvivalenciju te promenljive sa odgovarajućom podformulom. Rezultat je formula u KNF koja je \emph{ekvizadovoljiva} sa polaznom (zadovoljiva ako i samo ako je polazna zadovoljiva), uz linearno povećanje veličine. U našoj implementaciji Tseytin transformacija je ulazni korak koji formulu prevodi u KNF pre pokretanja DP procedure.
+
 
 
 \section{Opis metode}
 \label{sec:opis_metode}
-% TODO: DP procedura radi isključivo nad formulama u KNF.
-Ovo poglavlje treba da sad\v zi detaljniji opis samog algoritma koji je implementiran u okviru seminarskog rada. Algoritam mo\v ze biti opisan re\v cima ili pseudokodom (ne detaljno, ve\' c samo na nivou strukture). Treba poseban akcenat staviti na klju\v cne delove algoritma i njihovu ulogu. Po\v zeljno je navesti i primere koji dodatno razja\v snjavaju rad algoritma.
 
 \section{Implementacija}
 \label{sec:implementacija}
@@ -79,3 +92,7 @@ Takodje je bitno dati upustvo za prevodjenje i pokretanje projekta, kao i navest
 \end{thebibliography}
 
 \end{document}
+
+
+
+% TODO: Dodaj Maric, Bankovic slajdove u thebibliography sekciju
