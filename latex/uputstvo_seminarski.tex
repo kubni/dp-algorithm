@@ -3,7 +3,8 @@
 \usepackage[T1]{fontenc}
 \usepackage[serbian]{babel}
 \usepackage{hyperref}
-
+\usepackage{amsmath}
+\usepackage{amssymb}
 %opening
 \title{DP procedura za iskaznu logiku}
 \author{Nikola Kuburović, 1048/2024}
@@ -52,7 +53,7 @@ Ostatak ovog rada organizovan je na sledeći način. U poglavlju \ref{sec:osnove
 \paragraph{Klauza.} Disjunkcija literala, npr.\ $(p \vee \neg q \vee r)$.
 \paragraph{Konjunktivna normalna forma.} Formula je u \emph{konjunktivnoj normalnoj formi} (KNF) ako je konjunkcija klauza. DP procedura radi isključivo nad formulama u KNF.
 
-\paragraph{Dve prazne strukture.} Uvodimo dve granične vrednosti koje čine izlazne uslove algoritma:
+\paragraph{Uslovi zaustavljanja.}\label{par:uslovi_zaustavljanja} Uvodimo dve granične vrednosti koje čine uslove zaustavljanja algoritma:
 \begin{itemize}
   \item \textbf{Prazna klauza} $\{\}$ predstavlja $\bot$: disjunkcija bez članova je netačna. Pojava prazne klauze znači da je formula \textbf{nezadovoljiva}.
   \item \textbf{Prazan skup klauza} $\{\}$ predstavlja $\top$: konjunkcija bez članova je tačna. Prazan skup klauza znači da je formula \textbf{zadovoljiva}.
@@ -71,8 +72,46 @@ Rezolventa je logička posledica konjunkcije $C_1 \wedge C_2$. Rezolucija je pra
 \section{Opis metode}
 \label{sec:opis_metode}
 
+DP procedura ponavlja 3 glavna koraka dok ne dođe do odluke o tome da li je formula zadovoljiva ili ne:
+\subsection{Unit propagation}
+\emph{Jedinična klauza} je klauza sa tačno jednim literalom $l$. Da bi cela formula bila tačna, taj literal mora biti tačan. Zato:
+\begin{itemize}
+  \item svaka klauza koja sadrži $l$ je zadovoljena i uklanja se iz formule;
+  \item iz svake klauze koja sadrži $\neg l$ uklanja se literal $\neg l$ (jer ne doprinosi istinitosti klauze).
+\end{itemize}
+
+Uklanjanje $\neg l$ može neku klauzu svesti na jediničnu, pa ponavljamo isti postupak, ili na praznu klauzu, a tada je formula \textbf{nezadovoljiva}.
+Takođe, moguće je i da uklanjanjem klauza dobijemo prazan skup klauza, i tada zaključujemo da je formula \textbf{zadovoljiva}.
+
+\subsection{Pure literal}
+Literal $l$ je \emph{čist} (eng. \emph{pure}) ako se u celoj formuli pojavljuje samo u jednom polaritetu tj.\ $\neg l$ se ne javlja ni u jednoj klauzi. Tada uvek možemo tom literalu dodeliti vrednost koja ga čini tačnim, ne narušavajući nijednu drugu klauzu. Sve klauze koje sadrže $l$ postaju zadovoljene i uklanjaju se. Ovaj korak može uzrokovati zadovoljivost (ispražnjenjem skupa klauza), ali nikada nezadovoljivost, jer samo briše cele klauze, a nikada ne skraćuje klauzu, pa ne može stvoriti praznu klauzu (slučaj koji dovodi do UNSAT zaključka).
+
+\subsection{Variable elimination}
+
+Ovo je glavni, najvažniji korak DP procedure. Bira se \emph{pivot} promenljiva $x$ i skup klauza $S$ se podeli na tri dela:
+\begin{itemize}
+  \item $P$ :: klauze koje sadrže $x$;
+  \item $N$ :: klauze koje sadrže $\neg x$;
+  \item $R$ :: ostale klauze (ne sadrže $x$).
+\end{itemize}
+Zatim se generišu sve rezolvente po pivotu $x$: za \emph{svaki} par $(C_p, C_n) \in P \times N$ računa se rezolventa. Novi skup klauza je
+\[
+  S' = R \cup \{\, \text{rezolventa}(C_p, C_n) \mid C_p \in P,\ C_n \in N \,\},
+\]
+uz izbacivanje rezolventi koje su \emph{tautologije} (sadrže i $y$ i $\neg y$ za neku promenljivu $y$, pa su trivijalno tačne). Skup $S'$ ne sadrži više promenljivu $x$ i \emph{ekvizadovoljiv} je sa $S$ (predstavlja $\exists x.\, S$). Uslovi zaustavljanja su oni opisani u paragrafu \hyperref[par:uslovi_zaustavljanja]{Uslovi zaustavljanja}:
+\begin{itemize}
+  \item ako neka rezolventa bude prazna klauza $\Rightarrow$ \textbf{Formula je nezadovoljiva};
+  \item ako $S'$ bude prazan skup klauza $\Rightarrow$ \textbf{Formula je zadovoljiva}.
+\end{itemize}
+
+\paragraph{Cena koraka i izbor pivota.} Eliminacija promenljive sa $|P| = a$ i $|N| = b$ pojavljivanja \emph{uklanja} $a + b$ klauza, ali \emph{dodaje} do $a \cdot b$ rezolventi, po jednu za svaki par iz Dekartovog proizvoda $P \times N$. Kada je $a \cdot b > a + b$, broj klauza raste, i to se kroz uzastopne eliminacije može akumulirati eksponencijalno. Ovo je razlog za nastanak \emph{DPLL procedure} par godina kasnije. Kako je broj generisanih rezolventi $a \cdot b$, mogli bismo da koristimo heuristiku za izbor pivota koja \emph{minimizuje} $a \cdot b$. Pronalaženje optimalnog redosleda eliminacije je NP-težak problem.
+\\ \\
+\emph{Napomena}: Naša implementacija ne koristi nikakvu heuristiku za odabir pivota, već najprostije samo uzme prvi dostupan literal iz prve klauze u skupu klauza, i tako u svakoj iteraciji.
 \section{Implementacija}
 \label{sec:implementacija}
+
+
+
 
 U ovom poglavlju treba dati detalje implementacije. Treba navesti u kom programskom jeziku je metoda implementirana, kako je k\^od organizovan, koje su klju\v cne funkcije/klase/metode i koja je njihova uloga.
 
