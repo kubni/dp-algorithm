@@ -4,3 +4,8 @@ build/
 .cache/
 *.env
 *.html
+*.log
+*.gz
+*.aux
+*.out
+.auctex*

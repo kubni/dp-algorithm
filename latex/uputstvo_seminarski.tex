@@ -1,0 +1,72 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+%\usepackage[T2A]{fontenc}
+\usepackage[serbian]{babel}
+\usepackage{hyperref}
+
+%opening
+\title{Uputstvo za izradu seminarskog rada iz Automatskog rezonovanja}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+ Ovaj dokument predstavlja uputstvo za izradu seminarskog rada iz predmeta ,,Automatsko rezonovanje'' na master studijama na Matemati\v ckom fakultetu u Beogradu. Ujedno, ovaj dokument predstavlja primer po\v zeljne strukture samog rada. Ovaj paragraf predstavlja sa\v zetak (ili apstrakt) koji treba da postoji u svakom radu.
+ Sa\v zetak predstavlja rezime samog rada, tj.
+ ~sadr\v zaj rada prepri\v can u nekoliko re\v cenica. Sa\v zetak ne treba da sadr\v zi vi\v se od 100 re\v ci.
+\end{abstract}
+
+\section{Uvod}
+
+Seminarski rad iz predmeta ,,Automatsko rezonovanje'' se sastoji iz:
+
+\begin{itemize}
+ \item implementacije izabrane metode automatskog rezonovanja u odabranom programskom jeziku koja se prevodi i radi ispravno
+ \item kratkog rada (do 10 strana) koji opisuje odabranu metodu i njenu implementaciju
+\end{itemize}
+
+Ovaj tekst sadr\v zi opis formata i po\v zeljne strukture rada. Rad treba pisati u \LaTeX-u, pri \v cemu treba odabrati klasu \verb|article|:
+
+\begin{verbatim}
+ \documentclass[a4paper,10pt]{article}
+\end{verbatim}
+
+Ovaj tekstualni dokument mo\v ze ujedno biti kori\v s\' cen i kao obrazac za seminarski rad (\verb|.tex| fajl je dostupan na veb strani predmeta).
+
+Svaki rad treba da sadr\v zi uvodno poglavlje u kome se ukratko opisuje metoda koja je implementirana u samom radu, daje motivacija za njeno kori\v s\' cenje i ista se stavlja u \v siri kontekst u oblasti automatskog rezonovanja. Na kraju uvoda, u zasebnom pasusu, najavljuje se sadr\v zaj ostatka rada (vidi slede\' ci pasus za primer).
+
+Ostatak ovog rada organizovan je na slede\' ci na\v cin. U poglavlju \ref{sec:osnove} navodimo osnovne definicije, pojmove i notaciju koja \' ce biti kori\v s\'cena u ostatku rada. U poglavlju \ref{sec:opis_metode} dajemo detaljni opis algoritma koji je predmet ovog rada. Poglavlje \ref{sec:implementacija} sadr\v zi detalje implementacije metode. Najzad, poglavlje \ref{sec:zakljucak} sadr\v zi zaklju\v cna razmatranja i osvrt na metodu opisanu u radu.
+
+\section{Osnove}
+\label{sec:osnove}
+
+Poglavlje ,,Osnove'' treba da sadr\v zi osnovne definicije i notaciju koja \' ce biti kori\v s\' cena u ostatku rada. Na primer, ako je tema ,,Metod tabloa u iskaznoj logici'', potrebno je uvesti ukratko sintaksu i semantiku iskazne logike, definisati pojam zadovoljivosti i tautologi\v cnosti, kao i SAT problem.
+
+\section{Opis metode}
+\label{sec:opis_metode}
+
+Ovo poglavlje treba da sad\v zi detaljniji opis samog algoritma koji je implementiran u okviru seminarskog rada. Algoritam mo\v ze biti opisan re\v cima ili pseudokodom (ne detaljno, ve\' c samo na nivou strukture). Treba poseban akcenat staviti na klju\v cne delove algoritma i njihovu ulogu. Po\v zeljno je navesti i primere koji dodatno razja\v snjavaju rad algoritma.
+
+\section{Implementacija}
+\label{sec:implementacija}
+
+U ovom poglavlju treba dati detalje implementacije. Treba navesti u kom programskom jeziku je metoda implementirana, kako je k\^od organizovan, koje su klju\v cne funkcije/klase/metode i koja je njihova uloga.
+
+Takodje je bitno dati upustvo za prevodjenje i pokretanje projekta, kao i navesti softver koji je potreban za prevodjenje i pokretanje programa (prevodilac, alati, dodatne bibiloteke i sl.).
+
+\section{Zaklju\v cak}
+\label{sec:zakljucak}
+
+U zaklju\v cku treba dati osvrt na ceo rad, kao i na metodu koja je u njemu prikazana. Ceo rad ne treba da ima vi\v se od 10 strana. Nakon zaklju\v cka, navesti spisak relevantne literature, ako je ista kori\v s\' cena u izradi seminarskog. Svi navedeni radovi iz spiska moraju biti citirani negde u tekstu na ovaj na\v cin \cite{sat_handbook}. Primer spiska literature je
+dat u nastavku (primer knjige \cite{sat_handbook}, rada na konferenciji \cite{fast} i rada u \v casopisu \cite{dpll_t}).
+
+
+\begin{thebibliography}{100}
+\bibitem{sat_handbook} Biere, Armin, Marijn Heule, and Hans van Maaren, eds. Handbook of satisfiability. Vol. 185. IOS press, 2009.
+\bibitem{fast} Ganzinger, Harald, et al. \emph{DPLL (T): Fast decision procedures.} Computer Aided Verification: 16th International Conference, CAV 2004, Boston, MA, USA, July 13-17, 2004. Proceedings 16. Springer Berlin Heidelberg, 2004.
+\bibitem{dpll_t} Nieuwenhuis, Robert, Albert Oliveras, and Cesare Tinelli. \emph{Solving SAT and SAT modulo theories: From an abstract Davis--Putnam--Logemann--Loveland procedure to DPLL (T)}. Journal of the ACM (JACM). 2006.
+\end{thebibliography}
+
+\end{document}
