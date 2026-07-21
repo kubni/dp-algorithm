@@ -48,7 +48,7 @@ zadovoljivosti formule iskazne logike.
 
 Davis-Putnam (DP) procedura, kojom se ovaj rad bavi,
 je jedna od najranijih procedura za ispitivanje zadovoljivosti logičke formule, i nju su 1960. godine
-predložili Martin Dejvis i Hilari Putnam \cite{davis_putnam}
+predložili Martin Dejvis i Hilari Putnam \cite{davis_putnam}.
 
 Interesantno je da je originalni DP algoritam zapravo namenjen za ispitivanje zadovoljivosti formule logike prvog reda, i oslanja se na Herbrandovu teoremu i ideju
 da se problem u logici prvog reda svede na ispitivanje
@@ -135,12 +135,42 @@ Kod je organizovan u sledeće celine:
   \item \verb|main.cpp| :: konstrukcija ulazne formule, poziv procedure i ispis rezultata.
 \end{itemize}
 
+Najveći deo koda u \verb|lib.h| i \verb|lib.cpp| (definicije tipova formule i Tseytin transformacija) preuzet je i prilagođen iz materijala sa kursa \cite{ar_materijali}, dok su DP procedura i njeni koraci (\verb|dp.h|, \verb|dp.cpp|) autorski rad.
+
 \subsection{Reprezentacija podataka}
 
-Ulazna formula predstavlja se apstraktnim sintaksnim stablom preko \verb|std::variant| tipa \verb|Formula| (koji može biti \verb|False|, \verb|True|, \verb|Atom|, \verb|Not|, \verb|Binary|).
-Prvo se koristi Tseytin transformacija da bi se formula
-svela na KNF oblik, jer to zahteva DP procedura.
-Za KNF koristimo sledeće tipove:
+Ulazna formula predstavlja se apstraktnim sintaksnim stablom preko
+\verb|std::variant| tipa \verb|Formula|, koji može biti jedna od pet varijanti čvora, poput konstante \verb|False| i \verb|True|, atom
+\verb|Atom|, negacija \verb|Not| ili binarni veznik \verb|Binary|:
+
+\begin{lstlisting}
+struct False;
+struct True;
+struct Atom;
+struct Not;
+struct Binary;
+
+using Formula    = std::variant<False, True, Atom, Not, Binary>;
+using FormulaPtr = std::shared_ptr<Formula>;
+
+struct False {};
+struct True {};
+struct Atom { std::string name; };
+struct Not  { FormulaPtr subformula; };
+struct Binary {
+    enum Type { And, Or, Impl, Eq } type;
+    FormulaPtr left, right;
+};
+\end{lstlisting}
+
+\noindent Listovi stabla (\verb|Atom|, \verb|False|, \verb|True|) ne
+sadrže podformule, dok unarni (\verb|Not|) i binarni (\verb|Binary|)
+čvorovi decu drže preko \verb|FormulaPtr| (tj.\ \verb|std::shared_ptr|).
+Pokazivač je neophodan jer je tip rekurzivan, tj. na primer \verb|Binary| sadrži
+\verb|Formula| koja opet može biti \verb|Binary| pa bi bez pokazivača tip bio ,,beskonačne'' veličine.
+
+Prvo se koristi Tseytin transformacija da bi se formula svela na KNF
+oblik, jer to zahteva DP procedura. Za KNF koristimo sledeće tipove:
 
 \begin{lstlisting}
 struct Literal { bool pos; std::string name; };
@@ -157,7 +187,7 @@ Literal nosi ime promenljive i polaritet (\verb|pos|). Nad tipom \verb|Literal| 
 \begin{itemize}
   \item \verb|perform_unit_propagation(NormalForm&)| :: u petlji pronalazi jediničnu klauzu (\verb|std::ranges::find_if| po uslovu \verb|size() == 1|), uklanja klauze koje sadrže literal (\verb|std::erase_if|) i skraćuje klauze koje sadrže suprotni literal. Funkcija vraća \verb|false| ako neka klauza postane prazna, ili \verb|true| ako skup klauza (tj. formula) postane prazan, a ako nije moguće zaključiti ni jedno ni drugo, vraća formulu za dalju obradu.
   \item \verb|pure_literal(NormalForm&)| :: gradi mapu broja pojavljivanja literala po polaritetu (negativni se razlikuju po tome što imaju prefiks \verb|"!"|), pronalazi literal čiji suprotni polaritet ne postoji i uklanja sve klauze koje ga sadrže, i to ponavlja sve dok ima čistih literala.
-  \item \verb|elimination(NormalForm&, const Literal& pivot)| :: particioniše klauze u \verb|std::set<Clause>| $P, N, R$, generiše rezolvente za sve parove iz $P \times N$, preskače tautologije (\verb|does_contain_tautology|), vraća \verb|false| na praznu rezolventu i \verb|true| na prazan $S'$, pri čemu je $S'$ ekvizadovoljiva formula formuli S sa početka koraka.
+  \item \verb|elimination(NormalForm&, const Literal& pivot)| :: particioniše klauze u \verb|std::set<Clause>| $P, N, R$, generiše rezolvente za sve parove iz $P \times N$, preskače tautologije (\verb|does_contain_tautology|), vraća \verb|false| na praznu rezolventu i \verb|true| na prazan $S'$, pri čemu je $S'$ ekvizadovoljiva formula formuli $S$ sa početka koraka.
   \item \verb|dp(NormalForm&)| :: glavna petlja koja poziva tri koraka redom. Kao pivot bira prvi literal prve klauze (\verb|cnf[0][0]|), a pošto svaka iteracija eliminiše po jednu promenljivu, ovaj jednostavni izbor ne narušava korektnost.
   
 \end{itemize}
@@ -234,20 +264,17 @@ direktorijum projekta (nakon jednokratnog \verb|direnv allow|), bez
 potrebe za ručnim pozivom \verb|devenv shell|.
 
 
-\section{Zaklju\v cak}
+\section{Zaključak}
 \label{sec:zakljucak}
+U radu je opisana i implementirana Davis-Putnam procedura za ispitivanje zadovoljivosti formula iskazne logike. Procedura kombinuje dve jeftine transformacije, \emph{unit propagation} i \emph{pure literal}, koje uprošćavaju formulu radi poboljšanja performansi, sa glavnim korakom eliminacije promenljivih pomoću rezolucije, koji garantuje napredak i konačnu terminaciju.
 
-% U zaklju\v cku treba dati osvrt na ceo rad, kao i na metodu koja je u njemu prikazana. Ceo rad ne treba da ima vi\v se od 10 strana. Nakon zaklju\v cka, navesti spisak relevantne literature, ako je ista kori\v s\' cena u izradi seminarskog. Svi navedeni radovi iz spiska moraju biti citirani negde u tekstu na ovaj na\v cin \cite{sat_handbook}. Primer spiska literature je
-% dat u nastavku (primer knjige \cite{sat_handbook}, rada na konferenciji \cite{fast} i rada u \v casopisu \cite{dpll_t}).
+Glavno ograničenje DP procedure jeste prostorna složenost: korak eliminacije može generisati do $a \cdot b$ novih klauza po atomu, pri čemu je $a$ broj klauza koje sadrže njegov literal pozitivnog polariteta, a $b$ broj klauza koji sadrže njegov negativan literal, što se kroz uzastopne eliminacije akumulira eksponencijalno. Upravo je to razlog zbog kog je DP u praksi potisnut DPLL procedurom, koja postiže polinomijalnu prostornu složenost. Ipak, DP je značajan jer je on direktna preteča savremenih SAT rešavača.
+
 
 
 \begin{thebibliography}{100}
 \bibitem{davis_putnam}  Davis, Martin, and Hilary Putnam. \emph{A computing procedure for quantification theory.} Journal of the ACM (JACM) 7.3 (1960): 201--215.
-
+\bibitem{ar_materijali} Materijali sa kursa Automatsko rezonovanje, Matematički fakultet, Univerzitet u Beogradu. Dostupno na: \url{https://github.com/idrecun/ar-materijali}
 \end{thebibliography}
 
 \end{document}
-
-
-
-% TODO: Dodaj Maric, Bankovic slajdove u thebibliography sekciju
