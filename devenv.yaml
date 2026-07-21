@@ -6,11 +6,3 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
-
-nixpkgs:
-  config:
-    allowUnfree: true
-    x86_64-linux:
-      cudaSupport: true
-      cudaCapabilities: ["8.9"]
-

@@ -5,6 +5,21 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{gray},
+  showstringspaces=false,
+  language=C++
+}
+
+
+
 %opening
 \title{DP procedura za iskaznu logiku}
 \author{Nikola Kuburović, 1048/2024}
@@ -106,16 +121,118 @@ uz izbacivanje rezolventi koje su \emph{tautologije} (sadrže i $y$ i $\neg y$ z
 
 \paragraph{Cena koraka i izbor pivota.} Eliminacija promenljive sa $|P| = a$ i $|N| = b$ pojavljivanja \emph{uklanja} $a + b$ klauza, ali \emph{dodaje} do $a \cdot b$ rezolventi, po jednu za svaki par iz Dekartovog proizvoda $P \times N$. Kada je $a \cdot b > a + b$, broj klauza raste, i to se kroz uzastopne eliminacije može akumulirati eksponencijalno. Ovo je razlog za nastanak \emph{DPLL procedure} par godina kasnije. Kako je broj generisanih rezolventi $a \cdot b$, mogli bismo da koristimo heuristiku za izbor pivota koja \emph{minimizuje} $a \cdot b$. Pronalaženje optimalnog redosleda eliminacije je NP-težak problem.
 \\ \\
+% TODO: Pomeri ovu napomenu u sekciju Implementacija
 \emph{Napomena}: Naša implementacija ne koristi nikakvu heuristiku za odabir pivota, već najprostije samo uzme prvi dostupan literal iz prve klauze u skupu klauza, i tako u svakoj iteraciji.
 \section{Implementacija}
 \label{sec:implementacija}
 
+Metoda je implementirana u programskom jeziku \textbf{C++} (standard C++23).
+Kod je organizovan u sledeće celine:
+
+\begin{itemize}
+  \item \verb|lib.h| / \verb|lib.cpp| :: osnovni tipovi podataka i Tseytin transformacija;
+  \item \verb|dp.h| / \verb|dp.cpp| :: implementacija DP procedure i njena tri koraka;
+  \item \verb|main.cpp| :: konstrukcija ulazne formule, poziv procedure i ispis rezultata.
+\end{itemize}
+
+\subsection{Reprezentacija podataka}
+
+Ulazna formula predstavlja se apstraktnim sintaksnim stablom preko \verb|std::variant| tipa \verb|Formula| (koji može biti \verb|False|, \verb|True|, \verb|Atom|, \verb|Not|, \verb|Binary|).
+Prvo se koristi Tseytin transformacija da bi se formula
+svela na KNF oblik, jer to zahteva DP procedura.
+Za KNF koristimo sledeće tipove:
+
+\begin{lstlisting}
+struct Literal { bool pos; std::string name; };
+using Clause     = std::vector<Literal>;
+using NormalForm = std::vector<Clause>;
+\end{lstlisting}
+
+Literal nosi ime promenljive i polaritet (\verb|pos|). Nad tipom \verb|Literal| definisani su operatori \verb|==| i \verb|<| (poređenje leksikografski po imenu, pa po polaritetu). Operator \verb|<| je neophodan da bi klauze i skup klauza mogli da se porede, a to koristimo u procesu deduplikacije, kao i za korišćenje u \verb|std::set|.
+
+\subsection{Ključne funkcije}
+
+\paragraph{Povratni tip koraka.} Svaki od koraka koji može doneti konačan zaključak vraća \verb|std::variant<NormalForm, bool>|: \verb|bool| kodira ishod ispitivanja zadovoljivosti (\verb|true| = SAT, \verb|false| = UNSAT), dok \verb|NormalForm| znači ,,nema zaključka, nastavi sa uprošćenom formulom''. 
+
+\begin{itemize}
+  \item \verb|perform_unit_propagation(NormalForm&)| :: u petlji pronalazi jediničnu klauzu (\verb|std::ranges::find_if| po uslovu \verb|size() == 1|), uklanja klauze koje sadrže literal (\verb|std::erase_if|) i skraćuje klauze koje sadrže suprotni literal. Funkcija vraća \verb|false| ako neka klauza postane prazna, ili \verb|true| ako skup klauza (tj. formula) postane prazan, a ako nije moguće zaključiti ni jedno ni drugo, vraća formulu za dalju obradu.
+  \item \verb|pure_literal(NormalForm&)| :: gradi mapu broja pojavljivanja literala po polaritetu (negativni se razlikuju po tome što imaju prefiks \verb|"!"|), pronalazi literal čiji suprotni polaritet ne postoji i uklanja sve klauze koje ga sadrže, i to ponavlja sve dok ima čistih literala.
+  \item \verb|elimination(NormalForm&, const Literal& pivot)| :: particioniše klauze u \verb|std::set<Clause>| $P, N, R$, generiše rezolvente za sve parove iz $P \times N$, preskače tautologije (\verb|does_contain_tautology|), vraća \verb|false| na praznu rezolventu i \verb|true| na prazan $S'$, pri čemu je $S'$ ekvizadovoljiva formula formuli S sa početka koraka.
+  \item \verb|dp(NormalForm&)| :: glavna petlja koja poziva tri koraka redom. Kao pivot bira prvi literal prve klauze (\verb|cnf[0][0]|), a pošto svaka iteracija eliminiše po jednu promenljivu, ovaj jednostavni izbor ne narušava korektnost.
+  
+\end{itemize}
+
+\paragraph{Pomoćne funkcije.}
+\begin{itemize}
+  \item \verb|negate_literal| obrće polaritet,
+  \item \verb|does_contain_tautology| proverava da li klauza sadrži komplementaran par literala,
+  \item šablonska funkcija \verb|deduplicate| uklanja duplikate (\verb|sort| + \verb|unique| + \verb|erase|) i primenjuje se i unutar klauze (npr.\ rezolventa $p \vee p$) i nad skupom klauza.
+\end{itemize}
+
+\subsection{Poznata ograničenja}
+
+Implementacija se više fokusira na jasnoću, umesto na maksimalnu efikasnost. Neki koraci (npr.\ ponovno računanje mape pojavljivanja u \verb|pure_literal| u svakoj iteraciji, ili $O(n)$ pretrage po klauzama) mogli bi se ubrzati. Izbor pivota je trivijalan (prvi literal prve klauze) umesto heuristike koja minimizuje proizvod pojavljivanja tog literala u pozitivnom i negativnom polaritetu, što ne utiče na korektnost, ali može uticati na broj generisanih klauza.
+
+\subsection{Prevođenje i pokretanje}
+
+Potreban je kompajler sa punom podrškom za C++23 (npr. \verb|g++| $\ge$ 14 ili \verb|clang++| $\ge$ 18), jer se koriste \verb|std::ranges::contains|, \verb|std::string::contains|, \verb|std::vector::append_range| i \verb|std::unreachable|. Ostatak koda oslanja se na \verb|std::ranges| algoritme i \verb|std::erase_if|, koji su dostupni od C++20.
 
 
+Instrukcije za instalaciju potrebnih alata zavise od konkretne Linux distribucije na kojoj se pokreće program.
+Autor je koristio NixOS distribuciju, pa će instrukcije za nju specifično biti date u sekciji \hyperref[subsec:nix]{Pokretanje pomoću Nix-a i devenv-a}.
+\emph{Napomena}: \verb|nix| menadžer paketa i \verb|devenv| rade na bilo kojoj Linux distribuciji, i instrukcije za njihovo instaliranje zavise od konkretne distribucije koja se koristi.
 
-U ovom poglavlju treba dati detalje implementacije. Treba navesti u kom programskom jeziku je metoda implementirana, kako je k\^od organizovan, koje su klju\v cne funkcije/klase/metode i koja je njihova uloga.
+Program se prevodi i pokreće na sledeći način:
 
-Takodje je bitno dati upustvo za prevodjenje i pokretanje projekta, kao i navesti softver koji je potreban za prevodjenje i pokretanje programa (prevodilac, alati, dodatne bibiloteke i sl.).
+\begin{verbatim}
+cmake -S . -B build
+cmake --build build
+./build/main
+\end{verbatim} 
+
+\newpage
+Alternativno, direktno prevodiocem:
+
+\begin{itemize}
+  \item pomoću \verb|g++|:
+\begin{verbatim}
+g++ -std=c++23 main.cpp lib.cpp dp.cpp -o main
+./main
+\end{verbatim}
+
+  \item pomoću \verb|clang++|:
+\begin{verbatim}
+clang++ -std=c++23 main.cpp lib.cpp dp.cpp -o main
+./main
+\end{verbatim}
+\end{itemize}
+
+Program ispisuje KNF ulazne formule i konačan rezultat (\verb|SAT| ili \verb|UNSAT|).
+
+\subsection{Pokretanje pomoću Nix-a i devenv-a}\label{subsec:nix}
+
+Projekat sadrži \verb|devenv.nix| konfiguraciju koja obezbeđuje kompletno
+razvojno okruženje (C++ lanac alata, CMake i pomoćne alate), pa nije
+potrebno ručno instalirati kompajler. Ukoliko su na mašini dostupni
+\emph{Nix} i \emph{devenv}, dovoljno je ući u okruženje:
+
+\begin{verbatim}
+devenv shell
+\end{verbatim}
+
+\noindent Time se dobija ljuska u kojoj su svi potrebni alati na \verb|PATH|-u. Prevođenje i pokretanje se zatim izvode uobičajenim CMake koracima:
+
+\begin{verbatim}
+cmake -S . -B build
+cmake --build build
+./build/main
+\end{verbatim}
+
+\noindent Alternativno, pošto projekat sadrži i \verb|.envrc| fajl, uz
+instaliran \emph{direnv} okruženje se aktivira automatski pri ulasku u
+direktorijum projekta (nakon jednokratnog \verb|direnv allow|), bez
+potrebe za ručnim pozivom \verb|devenv shell|.
+
 
 \section{Zaklju\v cak}
 \label{sec:zakljucak}
