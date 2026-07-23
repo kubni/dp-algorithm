@@ -32,15 +32,15 @@
   DP (Davis-Putnam) procedura za iskaznu logiku ispituje zadovoljivost date formule iskazne logike.
   Sastoji se iz tri koraka:
   \begin{itemize}
-    \item Unit propagation
-    \item Pure literal
-    \item Variable elimination
+    \item Jedinična propagacija (eng. \emph{Unit propagation})
+    \item Čisti literal (eng. \emph{Pure literal})
+    \item Eliminacija promenljive (eng. \emph{Variable elimination})
   \end{itemize}
-  pri čemu je glavni korak upravo Variable elimination, dok prva dva služe da se poboljšaju performanse algoritma.
+  pri čemu je glavni korak upravo Eliminacija promenljive, dok prva dva služe da se poboljšaju performanse algoritma.
 \end{abstract}
 
 \section{Uvod}
-Jedan od velikih problema u Automatskom rezonovanju jeste problem ispitivanja \emph{zadovoljivosti} formule:
+Jedan od najznačajnijih problema u Automatskom rezonovanju jeste problem ispitivanja \emph{zadovoljivosti} formule:
 za datu formulu, neophodno je ispitati da li postoji dodela istinitosnih vrednosti njenim promenljivim, takva da je formula tačna.
 
 U našem slučaju, u pitanju je problem ispitivanja
@@ -50,7 +50,7 @@ Davis-Putnam (DP) procedura, kojom se ovaj rad bavi,
 je jedna od najranijih procedura za ispitivanje zadovoljivosti logičke formule, i nju su 1960. godine
 predložili Martin Dejvis i Hilari Putnam \cite{davis_putnam}.
 
-Interesantno je da je originalni DP algoritam zapravo namenjen za ispitivanje zadovoljivosti formule logike prvog reda, i oslanja se na Herbrandovu teoremu i ideju
+Interesantno je da je originalni DP algoritam zapravo namenjen za ispitivanje zadovoljivosti formule logike prvog reda, i oslanja se na Erbranovu teoremu i ideju
 da se problem u logici prvog reda svede na ispitivanje
 niza iskaznih formula, pri čemu se za te iskazne formule koristi upravo DP procedura koju ovaj rad opisuje.
 
@@ -60,19 +60,14 @@ Ostatak ovog rada organizovan je na sledeći način. U poglavlju \ref{sec:osnove
 \label{sec:osnove}
 
 \paragraph{Formule iskazne logike.} Grade se od skupa iskaznih \emph{promenljivih} (atoma) $p, q, r, \dots$, logičkih konstanti $\top$ (tačno) i $\bot$ (netačno), i logičkih veznika $\neg, \wedge, \vee, \Rightarrow, \Leftrightarrow$.
-\paragraph{Valuacija.} Preslikavanje $v$ koje svakoj promenljivoj dodeljuje istinitosnu vrednost iz $\{\top, \bot\}$; ono se na uobičajen način proširuje na sve formule. 
-\paragraph{Zadovoljivost.} Za formulu $F$ kažemo da je \emph{zadovoljiva} ako postoji valuacija $v$ takva da je $v(F) = \top$; u suprotnom je \emph{nezadovoljiva}.
-\paragraph{Tautologija.}Formula je \emph{tautologija} ako je tačna pri svakoj valuaciji. \emph{SAT problem} jeste problem odlučivanja da li je data formula zadovoljiva.
+\paragraph{Valuacija.} Preslikavanje $v$ koje svakoj promenljivoj dodeljuje istinitosnu vrednost iz $\{0, 1\}$; ono se na uobičajen način proširuje na sve formule. 
+\paragraph{Zadovoljivost.} Za formulu $F$ kažemo da je \emph{zadovoljiva} ako postoji valuacija $v$ takva da je $v(F) = 1$; u suprotnom je \emph{nezadovoljiva}.\emph{SAT problem} jeste problem odlučivanja da li je data formula zadovoljiva.
+\paragraph{Tautologija.}Formula je \emph{tautologija} ako je tačna pri svakoj valuaciji. 
 
  \paragraph{Literal.} Promenljiva ($p$) ili njena negacija ($\neg p$).
 \paragraph{Klauza.} Disjunkcija literala, npr.\ $(p \vee \neg q \vee r)$.
 \paragraph{Konjunktivna normalna forma.} Formula je u \emph{konjunktivnoj normalnoj formi} (KNF) ako je konjunkcija klauza. DP procedura radi isključivo nad formulama u KNF.
 
-\paragraph{Uslovi zaustavljanja.}\label{par:uslovi_zaustavljanja} Uvodimo dve granične vrednosti koje čine uslove zaustavljanja algoritma:
-\begin{itemize}
-  \item \textbf{Prazna klauza} $\{\}$ predstavlja $\bot$: disjunkcija bez članova je netačna. Pojava prazne klauze znači da je formula \textbf{nezadovoljiva}.
-  \item \textbf{Prazan skup klauza} $\{\}$ predstavlja $\top$: konjunkcija bez članova je tačna. Prazan skup klauza znači da je formula \textbf{zadovoljiva}.
-\end{itemize}
 
 \paragraph{Rezolucija.} Ako klauza $C_1$ sadrži literal $x$, a klauza $C_2$ literal $\neg x$, njihova \emph{rezolventa} po \emph{pivotu} $x$ je klauza
 \[
@@ -80,7 +75,7 @@ Ostatak ovog rada organizovan je na sledeći način. U poglavlju \ref{sec:osnove
 \]
 Rezolventa je logička posledica konjunkcije $C_1 \wedge C_2$. Rezolucija je pravilo izvođenja na kome počiva glavni korak DP procedure.
 
-\paragraph{Tseytin transformacija.} Proizvoljna formula ne mora biti u KNF, a naivno prevođenje može eksponencijalno povećati broj klauza. \emph{Tseytin transformacija} zaobilazi taj problem tako što svakoj podformuli dodeljuje novu promenljivu i dodaje klauze koje iskazuju ekvivalenciju te promenljive sa odgovarajućom podformulom. Rezultat je formula u KNF koja je \emph{ekvizadovoljiva} sa polaznom (zadovoljiva ako i samo ako je polazna zadovoljiva), uz linearno povećanje veličine. U našoj implementaciji Tseytin transformacija je ulazni korak koji formulu prevodi u KNF pre pokretanja DP procedure.
+\paragraph{Cajtin transformacija.} Proizvoljna formula ne mora biti u KNF, a naivno prevođenje može eksponencijalno povećati broj klauza. \emph{Cajtin transformacija} zaobilazi taj problem tako što svakoj podformuli dodeljuje novu promenljivu i dodaje klauze koje iskazuju ekvivalenciju te promenljive sa odgovarajućom podformulom. Rezultat je formula u KNF koja je \emph{ekvizadovoljiva} sa polaznom (zadovoljiva ako i samo ako je polazna zadovoljiva), uz linearno povećanje veličine. U našoj implementaciji Cajtin transformacija je ulazni korak koji formulu prevodi u KNF pre pokretanja DP procedure.
 
 
 
@@ -88,7 +83,7 @@ Rezolventa je logička posledica konjunkcije $C_1 \wedge C_2$. Rezolucija je pra
 \label{sec:opis_metode}
 
 DP procedura ponavlja 3 glavna koraka dok ne dođe do odluke o tome da li je formula zadovoljiva ili ne:
-\subsection{Unit propagation}
+\subsection{Jedinična propagacija}
 \emph{Jedinična klauza} je klauza sa tačno jednim literalom $l$. Da bi cela formula bila tačna, taj literal mora biti tačan. Zato:
 \begin{itemize}
   \item svaka klauza koja sadrži $l$ je zadovoljena i uklanja se iz formule;
@@ -101,7 +96,7 @@ Takođe, moguće je i da uklanjanjem klauza dobijemo prazan skup klauza, i tada 
 \subsection{Pure literal}
 Literal $l$ je \emph{čist} (eng. \emph{pure}) ako se u celoj formuli pojavljuje samo u jednom polaritetu tj.\ $\neg l$ se ne javlja ni u jednoj klauzi. Tada uvek možemo tom literalu dodeliti vrednost koja ga čini tačnim, ne narušavajući nijednu drugu klauzu. Sve klauze koje sadrže $l$ postaju zadovoljene i uklanjaju se. Ovaj korak može uzrokovati zadovoljivost (ispražnjenjem skupa klauza), ali nikada nezadovoljivost, jer samo briše cele klauze, a nikada ne skraćuje klauzu, pa ne može stvoriti praznu klauzu (slučaj koji dovodi do UNSAT zaključka).
 
-\subsection{Variable elimination}
+\subsection{Eliminacija promenljive}
 
 Ovo je glavni, najvažniji korak DP procedure. Bira se \emph{pivot} promenljiva $x$ i skup klauza $S$ se podeli na tri dela:
 \begin{itemize}
@@ -113,15 +108,17 @@ Zatim se generišu sve rezolvente po pivotu $x$: za \emph{svaki} par $(C_p, C_n)
 \[
   S' = R \cup \{\, \text{rezolventa}(C_p, C_n) \mid C_p \in P,\ C_n \in N \,\},
 \]
-uz izbacivanje rezolventi koje su \emph{tautologije} (sadrže i $y$ i $\neg y$ za neku promenljivu $y$, pa su trivijalno tačne). Skup $S'$ ne sadrži više promenljivu $x$ i \emph{ekvizadovoljiv} je sa $S$ (predstavlja $\exists x.\, S$). Uslovi zaustavljanja su oni opisani u paragrafu \hyperref[par:uslovi_zaustavljanja]{Uslovi zaustavljanja}:
+uz izbacivanje rezolventi koje su \emph{tautologije} (sadrže i $y$ i $\neg y$ za neku promenljivu $y$, pa su trivijalno tačne). Skup $S'$ ne sadrži više promenljivu $x$ i \emph{ekvizadovoljiv} je sa $S$ (predstavlja $\exists x.\, S$).
+
+\paragraph{Uslovi zaustavljanja.} Uvodimo dve granične vrednosti koje čine uslove zaustavljanja algoritma:
 \begin{itemize}
-  \item ako neka rezolventa bude prazna klauza $\Rightarrow$ \textbf{Formula je nezadovoljiva};
-  \item ako $S'$ bude prazan skup klauza $\Rightarrow$ \textbf{Formula je zadovoljiva}.
+  \item \textbf{Prazna klauza} $\{\}$ predstavlja $\bot$: disjunkcija bez članova je netačna. Pojava prazne klauze znači da je formula \textbf{nezadovoljiva}.
+  \item \textbf{Prazan skup klauza} $\{\}$ predstavlja $\top$: konjunkcija bez članova je tačna. Prazan skup klauza znači da je formula \textbf{zadovoljiva}.
 \end{itemize}
+
 
 \paragraph{Cena koraka i izbor pivota.} Eliminacija promenljive sa $|P| = a$ i $|N| = b$ pojavljivanja \emph{uklanja} $a + b$ klauza, ali \emph{dodaje} do $a \cdot b$ rezolventi, po jednu za svaki par iz Dekartovog proizvoda $P \times N$. Kada je $a \cdot b > a + b$, broj klauza raste, i to se kroz uzastopne eliminacije može akumulirati eksponencijalno. Ovo je razlog za nastanak \emph{DPLL procedure} par godina kasnije. Kako je broj generisanih rezolventi $a \cdot b$, mogli bismo da koristimo heuristiku za izbor pivota koja \emph{minimizuje} $a \cdot b$. Pronalaženje optimalnog redosleda eliminacije je NP-težak problem.
 \\ \\
-% TODO: Pomeri ovu napomenu u sekciju Implementacija
 \emph{Napomena}: Naša implementacija ne koristi nikakvu heuristiku za odabir pivota, već najprostije samo uzme prvi dostupan literal iz prve klauze u skupu klauza, i tako u svakoj iteraciji.
 \section{Implementacija}
 \label{sec:implementacija}
@@ -130,12 +127,12 @@ Metoda je implementirana u programskom jeziku \textbf{C++} (standard C++23).
 Kod je organizovan u sledeće celine:
 
 \begin{itemize}
-  \item \verb|lib.h| / \verb|lib.cpp| :: osnovni tipovi podataka i Tseytin transformacija;
+  \item \verb|lib.h| / \verb|lib.cpp| :: osnovni tipovi podataka i Cajtin transformacija;
   \item \verb|dp.h| / \verb|dp.cpp| :: implementacija DP procedure i njena tri koraka;
   \item \verb|main.cpp| :: konstrukcija ulazne formule, poziv procedure i ispis rezultata.
 \end{itemize}
 
-Najveći deo koda u \verb|lib.h| i \verb|lib.cpp| (definicije tipova formule i Tseytin transformacija) preuzet je i prilagođen iz materijala sa kursa \cite{ar_materijali}, dok su DP procedura i njeni koraci (\verb|dp.h|, \verb|dp.cpp|) autorski rad.
+Najveći deo koda u \verb|lib.h| i \verb|lib.cpp| (definicije tipova formule i Cajtin transformacija) preuzet je i prilagođen iz materijala sa kursa \cite{ar_materijali}, dok su DP procedura i njeni koraci (\verb|dp.h|, \verb|dp.cpp|) autorski rad.
 
 \subsection{Reprezentacija podataka}
 
@@ -169,7 +166,7 @@ sadrže podformule, dok unarni (\verb|Not|) i binarni (\verb|Binary|)
 Pokazivač je neophodan jer je tip rekurzivan, tj. na primer \verb|Binary| sadrži
 \verb|Formula| koja opet može biti \verb|Binary| pa bi bez pokazivača tip bio ,,beskonačne'' veličine.
 
-Prvo se koristi Tseytin transformacija da bi se formula svela na KNF
+Prvo se koristi Cajtin transformacija da bi se formula svela na KNF
 oblik, jer to zahteva DP procedura. Za KNF koristimo sledeće tipove:
 
 \begin{lstlisting}
